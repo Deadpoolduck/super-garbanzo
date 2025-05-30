@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dispatch Duke - SharePoint Assistant</title>
+    <style>
+        /* Modern Chat Interface Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+          body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated background particles */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-30px) rotate(120deg); }
+            66% { transform: translateY(15px) rotate(240deg); }
+        }
+
+        .chat-container {
+            width: 400px;
+            height: 600px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+       .chat-header {
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%);
+            color: white;
+            padding: 24px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chat-header h2 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .chat-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .bot-avatar {
+            width: 60px;
+            height: 60px;
+            background: #fff;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.bot {
+            justify-content: flex-start;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.4;
+        }
+
+        .bot .message-content {
+            background: #e3e3e3;
+            color: #333;
+            border-bottom-left-radius: 4px;
+        }
+
+        .user .message-content {
+            background: #2c5aa0;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .search-results {
+            margin-top: 10px;
+        }
+
+        .result-item {
+            background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+            border: 1px solid rgba(79, 70, 229, 0.1);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-item:hover {
+            background: #f0f7ff;
+            border-color: #2c5aa0;
+            transform: translateX(5px);
+        }
+
+        .result-item-title {
+            font-weight: 600;
+            color: #2c5aa0;
+            margin-bottom: 4px;
+        }
+
+        .result-item-desc {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .result-item-type {
+            font-size: 12px;
+            color: #666;
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-top: 4px;
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #eee;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #2c5aa0;
+        }
+
+        .send-button {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: #2c5aa0;
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .send-button:hover {
+            background: #1e3c72;
+            transform: scale(1.05);
+        }
+
+        .send-button:active {
+            transform: scale(0.95);
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 20px;
+            padding-top: 0;
+        }
+
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #999;
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .quick-actions {
+            padding: 10px 20px;
+            background: #f8f8f8;
+            border-top: 1px solid #eee;
+        }
+
+        .quick-action-btn {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-right: 8px;
+            margin-bottom: 5px;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .quick-action-btn:hover {
+            background: #2c5aa0;
+            color: white;
+            border-color: #2c5aa0;
+        }
+
+        /* Scrollbar Styles */
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Category styles */
+        .category-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .category-hr { background: #FFE5B4; color: #8B4513; }
+        .category-it { background: #E6F3FF; color: #0066CC; }
+        .category-finance { background: #E8F5E9; color: #2E7D32; }
+        .category-operations { background: #F3E5F5; color: #6A1B9A; }
+        .category-training { background: #FFF3E0; color: #E65100; }
+        .category-policies { background: #FFE0E0; color: #C62828; }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="bot-avatar">🤖</div>
+            <h2>Dispatch Duke</h2>
+            <p> !! At Your Service !!</p>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                <div class="message-content">
+                    Hello! I'm Dispatch Duke✨, I can help you find documents, Excel files, links, and answer questions about our resources. ✨?
+                </div>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+
+        <div class="quick-actions">
+            <button class="quick-action-btn" onclick="quickSearch('Daily Planner')">📅 Daily Planner</button>
+            <button class="quick-action-btn" onclick="quickSearch('DSM')">🎯 DSM</button>
+            <button class="quick-action-btn" onclick="quickSearch('ORDMS')">🚛 ORDMS</button>
+            <button class="quick-action-btn" onclick="quickSearch('SIMS')">📊 SIMS</button>
+        </div>
+
+        <div class="chat-input-container">
+            <div class="chat-input-wrapper">
+                <input 
+                    type="text" 
+                    class="chat-input" 
+                    id="chatInput" 
+                    placeholder="Type your question here..."
+                    onkeypress="handleKeyPress(event)"
+                >
+                <button class="send-button" onclick="sendMessage()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===========================
+        // CONFIGURATION SECTION - CUSTOMIZE YOUR LINKS AND CONTENT HERE
+        // ===========================
+
+        // Add your custom documents, files, and links here
+        const CUSTOM_RESOURCES = [
+            // HR Related Documents
+            {
+                title: "Annual Leave Calendar",
+                url: "https://myfedex.sharepoint.com/:x:/t/VICTASDispatcher/EYq41i2mfAtEoNbG68etRvsBwXyWvDAkAZ7pA6pjKKt4JA?e=Usz5cW",
+                type: "xlsx",
+                category: "HR",
+                description: "Annual Leave Calendar",
+                keywords: ["leave", "annual leave", "sick", "leave", "day off", "time off"],
+                
+            },
+            {
+                title: "Etime",
+                url: "https://eet6.adp.com/101bqzpstatic/applications/navigator/html5/dist/container/index.html?version=8.1.19.335",
+                type: "link",
+                category: "HR",
+                description: "Apply in E-Time",
+                keywords: ["leave", "vacation", "time off", "form", "request", "hr"],
+                
+            },
+            {
+                title: "Salary",
+                url: "https://portal.people.adp.com/oneux/ui/#/dashboard",
+                type: "link",
+                category: "HR",
+                description: "Get your pay slips",
+                keywords: ["ADP", "pay", "salary", "payslip", "money", "adp"],
+                
+            },
+
+            // IT Related Documents
+            {
+                title: "IT Support Portal",
+                url: "https://pdsm.service-now.com/assistme",
+                type: "link",
+                category: "link",
+                description: "Submit IT tickets and get technical support",
+                keywords: ["it", "support", "help", "ticket", "technical", "computer"],
+                
+            },
+            {
+                title: "DWS Installation Guide",
+                url: "https://myapps-las01.secure.fedex.com/dws/client/Server/ClientStartup",
+                type: "link",
+                category: "link",
+                description: "Step-by-step guide for installing Dispatch Workstation",
+                keywords: ["DWS", "installation", "install", "guide", "dws", "dispatch"],
+                
+            },
+            {
+                title: "GDP/SIMS Setup Instructions",
+                url: "https://myfedex.sharepoint.com/teams/GDPSIMSDispatcherReferenceManual",
+                type: "link",
+                category: "link",
+                description: "How to connect to SIMS/GDP",
+                keywords: ["GDP", "SIMS", "Sectorization", "Oncall", "pickups", "access"],
+                
+            },
+
+            // Contact information
+            {
+                title: "Daily Planner",
+                url: "https://myfedex.sharepoint.com/:x:/r/teams/VICTASSouthernClusterTeamSite/Shared%20Documents/Southern%20Cluster%20Fleet%20Planner%20FY24/Daily%20Planner%20Week%2052-%20Monday.xlsx?d=waef39552b159469c8241cf760a8680e6&e=4%3af96dbf5cda0d40e8bf3b4dc662ba989d&sharingv2=true&fromShare=true&at=9&xsdata=MDV8MDJ8cmF2aXNoYW4ucGVpcmlzQGZlZGV4LmNvbXxiMTU5NzRiOGQyZTU0NDEwNDJlZTA4ZGQ5YmUxN2RhN3xiOTQ1YzgxM2RjZTY0MWY4ODQ1NzVhMTJjMmZlMTViZnwwfDB8NjM4ODM4MTE0OTYzMzIxNzA3fFVua25vd258VFdGcGJHWnNiM2Q4ZXlKRmJYQjBlVTFoY0draU9uUnlkV1VzSWxZaU9pSXdMakF1TURBd01DSXNJbEFpT2lKWGFXNHpNaUlzSWtGT0lqb2lUV0ZwYkNJc0lsZFVJam95ZlE9PXwwfHx8&sdata=OEV6RFMwZWEvYnlnVHZGa3NXVUdSNUtVQ25MQi9HZmhKeW5LbG04SXQzST0%3d",
+                type: "xlsx",
+                category: "link",
+                description: "Daily planner",
+                keywords: ["Driver contact", "daily planner", "call driver", "phone number", "driver"],
+                lastUpdated: "2024-01-18"
+            },
+            {
+                title: "Agent contacts",
+                url: "https://myfedex.sharepoint.com/teams/VICTASDispatcher/Shared%20Documents/Cluster%20contacts/Southern%20Cluster%20Depot%20Contacts%20-%20UptoDate.xlsx?web=1",
+                type: "xlsx",
+                category: "Contact",
+                description: "Agent contact information",
+                keywords: ["agent", "call agent","HSMA", "BSJA","SVMA","WGTA","DPOA","KNSA","XCOA","annual"],
+                lastUpdated: "2024-01-02"
+            },
+
+            // Application Materials
+            {
+                title: "FMS",
+                url: "http://fmsonl/reports/index.php?req=fmsref&url=http://fmsonl/reportlst/FMS_Core/Reference/all_statuses.html",
+                type: "link",
+                category: "link",
+                description: "FMS online version",
+                keywords: ["FMS", "dispatch", "service code", "status codes", "station codes"],
+                
+            },
+		{
+                title: "ORDMS",
+                url: "http://ordms.au.tnt.com/",
+                type: "link",
+                category: "link",
+                description: "On road driver management",
+                keywords: ["Driver", "dispatch", "run number", "depot", "pickups"],
+                
+            },
+            {
+                title: "DSM",
+                url: "https://dws-pickup-management-ui-prod.app.paas.fedex.com/epum/pickup/ui/home",
+                type: "link",
+                category: "link",
+                description: "DSM - Dispatch Systems Manager",
+                keywords: ["DSM", "Dispatch Systems Manager", "dsm", "pickup request", "pickup list"],
+                
+            },
+
+
+
+            // Add more resources as needed...
+        ];
+
+        // Custom conversation responses - Add your Q&A pairs here
+        const CUSTOM_CONVERSATIONS = {
+            // Greetings
+            "hello": "Hello! My Name is Duke. Happy to help !!",
+            "hi": "Hi there! I'm here to help you find documents and information. What are you looking for?",
+            "good morning": "Good morning! Ready to help you find what you need in SharePoint.",
+            "good afternoon": "Good afternoon! What SharePoint resources can I help you locate?",
+            
+            // Common Questions
+            "how do i submit an expense report": "To submit an expense report:\n1. Download the Expense Report Template from Finance\n2. Fill in your expenses with receipts\n3. Submit to finance@company.com\n\nWould you like me to find the template for you?",
+            
+            "where can i find the employee handbook": "The Employee Handbook 2024 is located in the HR folder. It contains all company policies and procedures. Would you like me to show you the link?",
+            
+            "how do i request time off": "To request time off:\n1. Use the Leave Request Form in HR\n2. Fill out the dates and reason\n3. Submit to your manager for approval\n\nShall I find the leave request form for you?",
+            
+            "who do i contact for it support": "For IT support:\n• Visit the IT Support Portal\n• Email: itsupport@company.com\n• Phone: ext. 5555\n• For urgent issues, call the IT helpdesk directly\n\nWould you like the link to the IT portal?",
+            
+            "what are the company holidays": "You can find the complete list of company holidays in the Employee Handbook under 'Time Off Policies'. Would you like me to locate it for you?",
+            
+            "how do i connect to vpn": "To connect to VPN:\n1. Download the VPN client from IT portal\n2. Follow the VPN Setup Instructions\n3. Use your company credentials\n\nI can find the setup guide for you!",
+            
+            "where are the training materials": "Training materials are organized by topic:\n• New Employee Onboarding\n• Safety Training\n• Software Training\n• Leadership Development\n\nWhat specific training are you looking for?",
+            
+            "how do i reset my password": "To reset your password:\n1. Go to the IT Support Portal\n2. Click 'Password Reset'\n3. Follow the instructions\n\nAlternatively, contact IT support at ext. 5555",
+            
+            "benefits": "For benefits information, check the Benefits Overview presentation in HR. It covers health insurance, 401k, and other perks. Want me to find it?",
+            
+            "help": "I can help you find:\n• 📄 Documents (Word, PDF)\n• 📊 Excel files\n• 📽️ Presentations\n• 🔗 Links and portals\n• 📋 Forms and templates\n• 📚 Training materials\n\nJust tell me what you're looking for!"
+        };
+
+        // Key contacts - Add your important contacts here
+        const KEY_CONTACTS = {
+            "Ops": {
+                name: "Bev Woolley",
+                email: "bev.woolley@fedex.com",
+                phone: "+61 481901081",
+                topics: ["Supervisor", "Bev", "Contact Bev", "Boss"]
+            },
+            "Ops": {
+                name: "Michael Cooper",
+                email: "michael.cooper3@fedex.com", 
+                phone: "+61418133701",
+                topics: ["Big boss", "Cooper", "reports", "check"]
+            },
+            "Ops": {
+                name: "Cain Gauci",
+                email: "finance@company.com",
+                phone: "ext. 2222",
+                topics: ["expense", "budget", "reimbursement", "invoice"]
+            }
+        };
+
+        // ===========================
+        // CHATBOT LOGIC - No need to modify unless you want to change behavior
+        // ===========================
+
+        let conversationHistory = [];
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function quickSearch(query) {
+            document.getElementById('chatInput').value = query;
+            sendMessage();
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            // Add user message to chat
+            addMessage(message, 'user');
+            
+            // Clear input
+            input.value = '';
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            // Process the message
+            setTimeout(() => {
+                processUserMessage(message);
+            }, 800);
+        }
+
+        function addMessage(text, sender) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.innerHTML = text;
+            
+            messageDiv.appendChild(contentDiv);
+            messagesContainer.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // Add to history
+            conversationHistory.push({ sender, text });
+        }
+
+        function showTypingIndicator() {
+            document.getElementById('typingIndicator').style.display = 'block';
+        }
+
+        function hideTypingIndicator() {
+            document.getElementById('typingIndicator').style.display = 'none';
+        }
+
+        function processUserMessage(message) {
+            const lowerMessage = message.toLowerCase();
+            hideTypingIndicator();
+            
+            // Check for predefined conversations first
+            for (const [key, response] of Object.entries(CUSTOM_CONVERSATIONS)) {
+                if (lowerMessage.includes(key)) {
+                    addMessage(response, 'bot');
+                    return;
+                }
+            }
+            
+            // Check if asking about contacts
+            if (lowerMessage.includes('contact') || lowerMessage.includes('email') || lowerMessage.includes('phone')) {
+                const contact = findRelevantContact(lowerMessage);
+                if (contact) {
+                    displayContact(contact);
+                    return;
+                }
+            }
+            
+            // Search for resources
+            const results = searchResources(message);
+            
+            if (results.length > 0) {
+                displaySearchResults(results, message);
+            } else {
+                // No exact matches, try to be helpful
+                addMessage("I couldn't find exact matches for your search. Here are some suggestions:\n\n• Try different keywords\n• Check the quick action buttons below\n• Ask about specific departments (HR, IT, Finance)\n• Type 'help' to see what I can do", 'bot');
+            }
+        }
+
+        function searchResources(query) {
+            const lowerQuery = query.toLowerCase();
+            const words = lowerQuery.split(' ').filter(w => w.length > 2);
+            
+            // Score each resource based on relevance
+            const scoredResults = CUSTOM_RESOURCES.map(resource => {
+                let score = 0;
+                
+                // Check title match
+                if (resource.title.toLowerCase().includes(lowerQuery)) {
+                    score += 10;
+                }
+                
+                // Check keywords
+                resource.keywords.forEach(keyword => {
+                    if (lowerQuery.includes(keyword)) {
+                        score += 5;
+                    }
+                });
+                
+                // Check individual words
+                words.forEach(word => {
+                    if (resource.title.toLowerCase().includes(word)) {
+                        score += 3;
+                    }
+                    if (resource.description.toLowerCase().includes(word)) {
+                        score += 2;
+                    }
+                    resource.keywords.forEach(keyword => {
+                        if (keyword.includes(word)) {
+                            score += 2;
+                        }
+                    });
+                });
+                
+                // Check category
+                if (resource.category.toLowerCase() === lowerQuery) {
+                    score += 8;
+                }
+                
+                return { ...resource, score };
+            });
+            
+            // Return top results with score > 0
+            return scoredResults
+                .filter(r => r.score > 0)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 5);
+        }
+
+        function findRelevantContact(message) {
+            for (const [key, contact] of Object.entries(KEY_CONTACTS)) {
+                // Check if message contains department name or related topics
+                if (message.includes(key) || contact.topics.some(topic => message.includes(topic))) {
+                    return contact;
+                }
+            }
+            
+            // If asking about contacts in general, show all
+            if (message.includes('contact') && !message.includes('specific')) {
+                return 'all';
+            }
+            
+            return null;
+        }
+
+        function displayContact(contact) {
+            if (contact === 'all') {
+                let response = "Here are our key contacts:\n\n";
+                for (const dept of Object.values(KEY_CONTACTS)) {
+                    response += `<strong>${dept.name}</strong>\n`;
+                    response += `📧 ${dept.email}\n`;
+                    response += `📞 ${dept.phone}\n\n`;
+                }
+                addMessage(response, 'bot');
+            } else {
+                const response = `Here's the contact information for ${contact.name}:\n\n📧 Email: ${contact.email}\n📞 Phone: ${contact.phone}\n\nThey can help with: ${contact.topics.join(', ')}`;
+                addMessage(response, 'bot');
+            }
+        }
+
+        function displaySearchResults(results, query) {
+            let responseHtml = `Here what I got ${results.length} resource${results.length > 1 ? 's' : ''} related to "${query}":<div class="search-results">`;
+            
+            results.forEach(item => {
+                const fileIcon = getFileIcon(item.type);
+                const categoryClass = `category-${item.category.toLowerCase()}`;
+                
+                responseHtml += `
+                    <div class="result-item" onclick="openItem('${item.url}', '${item.title}')">
+                        <div class="result-item-title">${fileIcon} ${item.title}</div>
+                        <div class="result-item-desc">${item.description}</div>
+                        <div style="margin-top: 5px;">
+                            <span class="category-badge ${categoryClass}">${item.category}</span>
+                            <span class="result-item-type">${getFileTypeLabel(item.type)}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            responseHtml += '</div>';
+            addMessage(responseHtml, 'bot');
+        }
+
+        function getFileIcon(type) {
+            const icons = {
+                'xlsx': '📊',
+                'xls': '📊', 
+                'docx': '📄',
+                'doc': '📄',
+                'pptx': '📽️',
+                'ppt': '📽️',
+                'pdf': '📕',
+                'link': '🔗',
+                'default': '📁'
+            };
+            return icons[type] || icons.default;
+        }
+
+        function getFileTypeLabel(type) {
+            const labels = {
+                'xlsx': 'Excel',
+                'xls': 'Excel',
+                'docx': 'Word',
+                'doc': 'Word',
+                'pptx': 'PowerPoint',
+                'ppt': 'PowerPoint',
+                'pdf': 'PDF',
+                'link': 'Website',
+                'default': 'File'
+            };
+            return labels[type] || labels.default;
+        }
+
+        function openItem(url, title) {
+            // In SharePoint, this would open the actual file/link
+            // For demo purposes, we'll show a message
+            if (url.startsWith('http')) {
+                window.open(url, '_blank');
+                addMessage(`Opening ${title} in a new tab...`, 'bot');
+            } else {
+                addMessage(`Opening: ${title}\n\nPath: ${url}\n\n<em>Note: In SharePoint, clicking this would open the actual file.</em>`, 'bot');
+            }
+        }
+    </script>
+</body>
+</html>
+
